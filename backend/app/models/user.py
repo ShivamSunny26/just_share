@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import  Column, Boolean, String, DateTime
+from sqlalchemy import  Column, Boolean, String, DateTime, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.postgres import Base
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -12,23 +13,36 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-
-    hashed_password = Column(String, default=True)
-
+    hashed_password = Column(String, nullable=False)
     is_active= Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    failed_login_attempts = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+
+    # Link to tokens
+    tokens = relationship("VerificationToken", back_populates="user", cascade="all, delete-orphan")
+
+
+class VerificationToken(Base):
+    __tablename__ = "verification_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token = Column(String,unique=True, index=True, nullable=False)
+    token_type= Column(String, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-
+    user = relationship("User", back_populates="tokens")
 class Friendship(Base):
     __tablename__ = "friendships"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     user_id_1 = Column(UUID(as_uuid=True), nullable=False, index=True)
     user_id_2 = Column(UUID(as_uuid=True), nullable=False, index=True)
-
-    # Track the relationship status (e.g., 'pending', 'accepted', 'blocked')
-
     status = Column(String, default="pending")
-
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+    

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from uuid import UUID
 from datetime import datetime
+from pydantic import BaseModel, EmailStr
 
 # 1. Base Model (shared properties)
 # By putting common fields here, we avoid repeating them in the create and Response models
@@ -11,12 +12,12 @@ class UserBase(BaseModel):
 # 2. Registration Payload (Incoming Data)
 # Inherits username and email, and strictly requires a plain-text password.
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8)
 
 # 3. Login Payload (Incoming Data)
 # Used specifically for the /login endpoint
-class UseerLogin(BaseModel):
-    email: EmailStr
+class UserLogin(BaseModel):
+    username_or_email: str
     password: str
 
 # 4. Safe Response Output (Outgoing Data)
