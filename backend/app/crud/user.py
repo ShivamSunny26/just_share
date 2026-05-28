@@ -7,6 +7,7 @@ from sqlalchemy import or_
 
 
 
+
 async def get_user_by_identifier(db: AsyncSession, identifier: str):
     """Fetch a user from Postgres by matching Either their email or username"""
     stmt = select(User).where(

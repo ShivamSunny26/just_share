@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import  Column, Boolean, String, DateTime, Integer, ForeignKey
+from sqlalchemy import  Column, Boolean, String, DateTime, Integer, ForeignKey, Enum, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.postgres import Base
 from sqlalchemy.orm import relationship
+from app.models.friend import Friendship
+
 
 class User(Base):
     __tablename__ = "users"
@@ -23,6 +25,8 @@ class User(Base):
     # Link to tokens
     tokens = relationship("VerificationToken", back_populates="user", cascade="all, delete-orphan")
 
+    sent_requests = relationship("Friendship", foreign_keys="[Friendship.requester_id]", back_populates="requester", cascade="all, delete-orphan")
+    received_requests = relationship("Friendship", foreign_keys="[Friendship.addressee_id]", back_populates="receiver", cascade="all, delete-orphan")
 
 class VerificationToken(Base):
     __tablename__ = "verification_tokens"
@@ -35,14 +39,3 @@ class VerificationToken(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="tokens")
-class Friendship(Base):
-    __tablename__ = "friendships"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id_1 = Column(UUID(as_uuid=True), nullable=False, index=True)
-    user_id_2 = Column(UUID(as_uuid=True), nullable=False, index=True)
-    status = Column(String, default="pending")
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-
-    

@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import auth
+from app.api import auth, friend
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = [
@@ -13,6 +13,8 @@ app = FastAPI(title="Just_share")
 # mount the auth router under the /api/v1 prefix
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(friend.router, prefix="api/v1/friends", tags=["Friends"])
+
 
 @app.get("/")
 async def root():

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession 
-from fastapi.security import OAuth2PasswordBearer
 import jwt
+from uuid import UUID
 
+from app.api.deps import get_current_user_id
 from app.db.postgres import get_db
 from app.schemas import user as user_schemas
 from app.crud import user as user_crud
@@ -131,28 +132,12 @@ async def login_user(
         "token_type": "bearer"
     }
 
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 @router.get("/me")
-async def get_current_user_profile(token: str = Depends(oauth2_scheme)):
-    """A protected route that requires a valid JWT Access Token."""
-    try:
-        # Decode the token using your secret key
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        token_type = payload.get("type")
-        
-        
-        if user_id is None or token_type != "access":
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-        
-        return {"message": "Success! You accessed a protected route.", "user_id": user_id}
-        
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Access token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid access token")
-    
+async def get_current_user_profile(user_id: UUID = Depends(get_current_user_id)):
+    return {
+        "message": "Success! You accessed a protected route.", 
+        "user_id": user_id
+    }
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
