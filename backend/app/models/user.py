@@ -4,7 +4,7 @@ from sqlalchemy import  Column, Boolean, String, DateTime, Integer, ForeignKey, 
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.postgres import Base
 from sqlalchemy.orm import relationship
-from app.models.friend import Friendship
+
 
 
 class User(Base):
@@ -14,6 +14,7 @@ class User(Base):
     # It is much more secure for public-facing chat applications.
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active= Column(Boolean, default=True)
@@ -26,7 +27,7 @@ class User(Base):
     tokens = relationship("VerificationToken", back_populates="user", cascade="all, delete-orphan")
 
     sent_requests = relationship("Friendship", foreign_keys="[Friendship.requester_id]", back_populates="requester", cascade="all, delete-orphan")
-    received_requests = relationship("Friendship", foreign_keys="[Friendship.addressee_id]", back_populates="receiver", cascade="all, delete-orphan")
+    received_requests = relationship("Friendship", foreign_keys="[Friendship.addressee_id]", back_populates="addressee", cascade="all, delete-orphan")
 
 class VerificationToken(Base):
     __tablename__ = "verification_tokens"
