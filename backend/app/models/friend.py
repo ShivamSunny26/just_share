@@ -7,9 +7,9 @@ from sqlalchemy.orm import relationship
 import enum
 
 class FriendshipStatus(str, enum.Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    BLOCKED = "blocked"
+    PENDING =   "PENDING"
+    ACCEPTED =  "ACCEPTED"
+    BLOCKED =   "BLOCKED"
 
 
 class Friendship(Base):
@@ -27,5 +27,5 @@ class Friendship(Base):
         UniqueConstraint("requester_id", "addressee_id", name="uq_friendship_request"),
     )
 
-    requester = relationship("User", foreign_keys=[requester_id], back_populates="sent_requests")
-    addressee = relationship("User", foreign_keys=[addressee_id], back_populates="received_requests")
+    requester = relationship("User", foreign_keys="Friendship.requester_id", lazy="selectin")
+    addressee = relationship("User", foreign_keys="Friendship.addressee_id", lazy="selectin")

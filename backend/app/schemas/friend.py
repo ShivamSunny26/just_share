@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -10,13 +10,21 @@ class FriendshipBase(BaseModel):
     status: FriendshipStatus
 
 
+class FriendUserDetail(BaseModel):
+    id: UUID
+    username: str
+    name: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FriendshipResponse(FriendshipBase):
     id: UUID
     created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
+    
+    requester: FriendUserDetail | None = None
+    addressee: FriendUserDetail | None = None
+    model_config = ConfigDict(from_attributes=True)
 
 class UserProfileMinimal(BaseModel):
     id: UUID

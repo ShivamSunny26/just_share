@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from app.db.redis import redis_client 
 from app.db.mongo import offline_messages
-from app.core.encryption import playfair_encrypt, playfair_decrypt
+# from app.core.encryption import playfair_encrypt, playfair_decrypt
 
 class ConnectionManager:
     def __init__(self):
@@ -44,12 +44,12 @@ class ConnectionManager:
             print(f"Message instatly delivered to {receiver_id}")
             return
         
-        encrypted_content = playfair_encrypt(payload["content"], "SECRET")
+        # encrypted_content = playfair_encrypt(payload["content"], "SECRET")
 
         offline_doc = {
             "sender_id": str(sender_id),
             "receiver_id": str(receiver_id),
-            "content": encrypted_content,
+            "content": payload["content"],
             "created_at": datetime.now(timezone.utc)
         }
         await offline_messages.insert_one(offline_doc)
@@ -59,11 +59,12 @@ class ConnectionManager:
     async def deliver_offline_messages(self, websocket: WebSocket, user_id: UUID):
         """Fetcches, sends, and wipes offline messages"""
         cursor = offline_messages.find({"receiver_id": str(user_id)})
-        message_sent = 0
+        messages_sent = 0
         docs = await cursor.to_list(length=100)
 
         for doc in docs:
             payload = {
+                "type": "chat_message",
                 "sender_id": doc["sender_id"],
                 "content": doc["content"],
                 "timestamp": doc["created_at"].isoformat()
@@ -94,26 +95,4 @@ class ConnectionManager:
         result = await redis_client.get(redis_key)
         return result == "true"
     
-    async def deliver_offline_messsages(self, websocket: WebSocket, user_id: UUID):
-        """Finds message in Mongo, sends them and instantly deletes them"""
-        cursor = offline_messages.find({"receiver_id": str(user_id)})
-
-        messages_sent = 0 
-        # convert cursor to a list of documents
-        docs = await cursor.to_list(length=100)
-
-        for doc in docs:
-            payload = {
-                "sender_id": doc['sender_id'],
-                "content": doc['content'],
-                "timestamp": doc['created_at'].isoformat()
-            }
-
-            await websocket.send_json(payload)
-            messages_sent += 1
-
-        if messages_sent > 0:
-            await offline_messages.delete_many({"receiver_id": str(user_id)})
-            print(f"Delivered and deleted {messages_sent} offline messages for {user_id}")
-        
 manager = ConnectionManager()

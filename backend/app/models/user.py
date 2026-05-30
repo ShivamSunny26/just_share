@@ -17,6 +17,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    public_key = Column(String, nullable=True)
     is_active= Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     failed_login_attempts = Column(Integer, default=0)

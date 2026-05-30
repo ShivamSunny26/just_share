@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, delete
 from uuid import UUID
+from sqlalchemy.orm import selectinload
 
 from app.models.friend import Friendship, FriendshipStatus
 
@@ -41,7 +42,7 @@ async def accept_friend_request(db: AsyncSession, requester_id: UUID, addressee_
     )
 
     result = await db.execute(stmt)
-    db_rel = result.scalars().first()
+    db_rel = result.scalar_one_or_none()
 
     if db_rel:
         db_rel.status = FriendshipStatus.ACCEPTED
@@ -84,19 +85,19 @@ async def block_user(db: AsyncSession, blocker_id: UUID, blocked_id: UUID):
     await db.refresh(block_rel)
     return block_rel
 
-async def get_friends_list(db: AsyncSession, user_id: UUID):
-    """Scenario 5: Get all friends for User A"""
-    stmt = select(Friendship).where(
-        and_(
-            or_(
-                Friendship.requester_id == user_id,
-                Friendship.addressee_id == user_id
-            ),
-            Friendship.status == FriendshipStatus.ACCEPTED
-        )
-    )
-    result = await db.execute(stmt)
-    return result.scalars().all()
+# async def get_friends_list(db: AsyncSession, user_id: UUID):
+#     """Scenario 5: Get all friends for User A"""
+#     stmt = select(Friendship).where(
+#         and_(
+#             or_(
+#                 Friendship.requester_id == user_id,
+#                 Friendship.addressee_id == user_id
+#             ),
+#             Friendship.status == FriendshipStatus.ACCEPTED
+#         )
+#     )
+#     result = await db.execute(stmt)
+#     return result.scalars().all()
 
 async def check_if_blocked(db: AsyncSession, searcher_id: UUID, target_id: UUID) -> bool:
     """
@@ -111,3 +112,33 @@ async def check_if_blocked(db: AsyncSession, searcher_id: UUID, target_id: UUID)
     )
     result = await db.execute(stmt)
     return result.scalars().first() is not None
+
+async def get_friends_list(db: AsyncSession, user_id: UUID):
+    stmt = (
+        select(Friendship)
+        .options(
+            selectinload(Friendship.requester),
+            selectinload(Friendship.addressee)
+        )
+        .where(
+            and_(
+                or_(Friendship.requester_id == user_id, Friendship.addressee_id == user_id),
+                Friendship.status == FriendshipStatus.ACCEPTED
+            )
+        )
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+async def get_blocked_list(db: AsyncSession, user_id: UUID):
+
+    stmt = select(Friendship).where(
+        and_(
+            Friendship.requester_id == user_id,
+            Friendship.status == FriendshipStatus.BLOCKED
+        )
+    )
+    
+    result = await db.execute(stmt)
+    return result.scalars().all()

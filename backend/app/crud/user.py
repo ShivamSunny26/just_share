@@ -1,15 +1,19 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import or_, case, desc, and_
+from uuid import UUID
+
+
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.security import hash_password
-from sqlalchemy import or_, case, desc, and_
-from uuid import UUID
 from app.models.friend import Friendship, FriendshipStatus
 
 
 async def get_user_by_identifier(db: AsyncSession, identifier: str):
     """Fetch a user from Postgres by matching Either their email or username"""
+    identifier = identifier.lower()
+    
     stmt = select(User).where(
         or_(
             User.email == identifier, 
@@ -55,10 +59,10 @@ async def create_user(db: AsyncSession, user: UserCreate):
         username = user.username,
         name = user.name,
         email= user.email,
-        hashed_password=hashed_pwd
+        hashed_password=hashed_pwd,
+        public_key=user.public_key
     )
 
-    # 3. Add to the session and commit the transaction asynchronously
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
@@ -66,6 +70,9 @@ async def create_user(db: AsyncSession, user: UserCreate):
     return db_user
 
 async def search_users(db: AsyncSession, current_user_id: UUID, search_query: str, limit: int = 15):
+    
+    search_query = search_query.lower()
+    
     wildcard_query = f"%{search_query}%"
     prefix_query= f"{search_query}%"
 
@@ -126,3 +133,22 @@ async def search_users(db: AsyncSession, current_user_id: UUID, search_query: st
 
 
     return search_results
+
+# Whatsapp style contacts list
+async def get_chat_contacts(db: AsyncSession, current_user_id: UUID):
+    stmt = (
+        select(User)
+        .join(
+            Friendship,
+            or_(
+                and_(Friendship.requester_id == current_user_id, Friendship.addressee_id == User.id),
+                and_(Friendship.addressee_id == current_user_id, Friendship.requester_id == User.id)
+            )
+        )
+        .where(
+            Friendship.status == FriendshipStatus.ACCEPTED
+        )
+        .order_by(User.username)
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()

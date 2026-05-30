@@ -38,10 +38,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Just_share", lifespan=lifespan)
 
+origins=[
+    "http://localhost:5173",
+]
 # CORS configuration to allow local network testing
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

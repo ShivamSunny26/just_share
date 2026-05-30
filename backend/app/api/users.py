@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List
+from sqlalchemy import and_
 
 from app.db.postgres import get_db
 from app.crud import user as user_crud
@@ -24,5 +25,7 @@ async def search_for_users(
     )
 
     return users
+
+
 
 
